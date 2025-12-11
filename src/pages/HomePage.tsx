@@ -1,96 +1,69 @@
-import React, { useState } from 'react';
-import { Car, Info, FileText, Database } from 'lucide-react';
-import img from '../assets/images/images.jpg'
-export default function HomePage() {
-  const [isStarted, setIsStarted] = useState(false);
-  const [activeLink, setActiveLink] = useState('');
-  
-  // URL ảnh nền - có thể thay đổi
-  const [backgroundImage] = useState(img);
+    import React, { useState } from 'react';
+    import WelcomeCompunent from '../components/WelcomeCompunent'; 
+    import img from '../assets/images/images.jpg'
+    import { useNavigate } from 'react-router-dom';
+    import '../assets/styles/HomePage.css'
+    import LoginForm from '../components/LoginForm';
+    import RegisterForm from '../components/RegisterForm';
+    import LoginWithEmailForm from '../components/LoginWithEmailForm'
+    export default function HomePage() {
+    const [page, setPage] = useState(1);  
+    const [isStarted, setIsStarted] = useState(false);
+    const [activeLink, setActiveLink] = useState('');
+        const navigate = useNavigate();
 
-  const handleStart = () => {
-    setIsStarted(true);
-    setTimeout(() => {
-      setIsStarted(false);
-    }, 600);
-  };
+    // URL ảnh nền - có thể thay đổi
+    const [backgroundImage] = useState(img);
 
-  const handleLinkClick = (link: string) => {
-    setActiveLink(link);
-    setTimeout(() => {
-      setActiveLink('');
-    }, 300);
-  };
+    const handleStart = () => {
+        setIsStarted(true);
+        setTimeout(() => {
+        setIsStarted(false);
+        }, 600);
+        navigate('/chatpage/')
+        // setPage(2)
+    };
 
-  return (
-    <div className="homepage">
-      {/* Background Image với Blur */}
-      <img 
-        src={backgroundImage} 
-        alt="background" 
-        className="homepage-bg-image"
-      />
-      
-      {/* Overlay */}
-      <div className="homepage-bg-overlay"></div>
+    const handleLinkClick = (link: string) => {
+        setActiveLink(link);
+        setTimeout(() => {
+        setActiveLink('');
+        }, 300);
+    };
 
-      <div className="homepage-container">
-        <div className="card">
-          {/* Header */}
-          <div className="header">
-            <Car className="header-icon" />
-            <h1 className="header-title">CAR EVALUATION PREDICTOR</h1>
-          </div>
-
-          {/* Divider */}
-          <div className="divider"></div>
-
-          {/* Description */}
-          <p className="description">
-            Công cụ dự đoán mức độ phù hợp của xe dựa trên đặc điểm kỹ thuật bằng mô hình học máy.
-          </p>
-
-          {/* Start Button */}
-          <button 
-            className={`start-button ${isStarted ? 'active' : ''}`}
-            onClick={handleStart}
-          >
-            [ BẮT ĐẦU ]
-          </button>
-
-          {/* Bottom Links */}
-          <div className="footer-links">
-            <button 
-              className={`link ${activeLink === 'intro' ? 'active' : ''}`}
-              onClick={() => handleLinkClick('intro')}
-            >
-              <Info className="link-icon" />
-              Giới thiệu
-            </button>
-            <span className="separator">–</span>
-            <button 
-              className={`link ${activeLink === 'guide' ? 'active' : ''}`}
-              onClick={() => handleLinkClick('guide')}
-            >
-              <FileText className="link-icon" />
-              Hướng dẫn
-            </button>
-            <span className="separator">–</span>
-            <button 
-              className={`link ${activeLink === 'data' ? 'active' : ''}`}
-              onClick={() => handleLinkClick('data')}
-            >
-              <Database className="link-icon" />
-              Tài liệu dữ liệu
-            </button>
-          </div>
+    return (
+        <div className="homepage">
+        {/* Background Image với Blur */}
+        <img 
+            src={backgroundImage} 
+            alt="background" 
+            className="homepage-bg-image"
+        />
+        
+        {/* Overlay */}
+        <div className="homepage-bg-overlay"></div>
+       
+        <div className="homepage-container">
+            {/* {page == 1 ?<WelcomeCompunent   activeLink={activeLink} 
+                            handleLinkClick={handleLinkClick}
+                            handleStart={handleStart}
+                            isStarted={isStarted}  />:
+            page == 2?<LoginWithEmailForm/> :
+            page == 3?<LoginForm handleSubmit={()=> navigate("/chatpage/")} handleRegister={()=> setPage(3)}/>
+            :<RegisterForm handleSubmitProps={()=>setPage(2)} handleLogin ={()=> setPage(2)}/>
+            
+             } */}
+           <WelcomeCompunent   activeLink={activeLink} 
+                            handleLinkClick={handleLinkClick}
+                            handleStart={handleStart}
+                            isStarted={isStarted}  />
+          
+                            {/* Footer */}
+            <div className="footer-info">
+            <p>Powered by Machine Learning • UCI Car Evaluation Dataset</p>
+            </div>
+            
         </div>
-
-        {/* Footer */}
-        <div className="footer-info">
-          <p>Powered by Machine Learning • UCI Car Evaluation Dataset</p>
         </div>
-      </div>
-    </div>
-  );
-}
+    );
+    }

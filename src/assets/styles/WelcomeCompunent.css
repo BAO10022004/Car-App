@@ -1,0 +1,238 @@
+/* Container */
+.homepage-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* background: linear-gradient(to bottom right, #1e3a8a, #1e40af, #172554); */
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animated background effects */
+.homepage-container::before,
+.homepage-container::after {
+  content: '';
+  position: absolute;
+  width: 24rem;
+  height: 24rem;
+  border-radius: 50%;
+  opacity: 0.1;
+  filter: blur(80px);
+  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.homepage-container::before {
+  top: 25%;
+  left: 25%;
+  background-color: #3b82f6;
+}
+
+.homepage-container::after {
+  bottom: 25%;
+  right: 25%;
+  /* background-color: #06b6d4; */
+  animation-delay: 1s;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.15;
+  }
+}
+
+/* Main Card */
+.card {
+  position: relative;
+  width: 100%;
+  max-width: 42rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 2rem;
+  transition: all 0.5s ease;
+  margin-bottom: 2rem;
+}
+
+.card:hover {
+  box-shadow: 0 25px 50px -12px rgba(59, 130, 246, 0.2);
+  transform: scale(1.02);
+}
+
+@media (min-width: 768px) {
+  .card {
+    padding: 3rem;
+  }
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.header-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: white;
+  padding: 0.75rem;
+  background: #3b82f6;
+  border-radius: 1rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.header-icon:hover {
+  transform: rotate(12deg) scale(1.1);
+}
+
+.header-title {
+  font-size: 1.875rem;
+  font-weight: bold;
+  color: white;
+  letter-spacing: -0.025em;
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .header-title {
+    font-size: 2.25rem;
+  }
+}
+
+/* Divider */
+.divider {
+  position: relative;
+  height: 0.25rem;
+  background: linear-gradient(to right, transparent, #60a5fa, transparent);
+  margin-bottom: 2rem;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.divider::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, #93c5fd, #67e8f9);
+  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Description */
+.description {
+  color: #bfdbfe;
+  text-align: center;
+  font-size: 1.125rem;
+  margin-bottom: 2rem;
+  line-height: 1.75;
+}
+
+/* Start Button */
+.start-button {
+  width: 100%;
+  padding: 1rem 2rem;
+  background: linear-gradient(to right, #3b82f6, #06b6d4);
+  color: white;
+  font-size: 1.25rem;
+  font-weight: bold;
+  border-radius: 1rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 2rem;
+}
+
+.start-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.5);
+  background: linear-gradient(to right, #2563eb, #0891b2);
+}
+
+.start-button:active,
+.start-button.active {
+  transform: scale(0.95);
+}
+
+/* Footer Links */
+.footer-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  color: #bfdbfe;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  font-size: 1rem;
+}
+
+.link:hover {
+  color: white;
+}
+
+.link::after {
+  content: '';
+  position: absolute;
+  bottom: -0.25rem;
+  left: 0;
+  width: 0;
+  height: 0.25rem;
+  background: #60a5fa;
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+.link:hover::after {
+  width: 100%;
+}
+
+.link.active {
+  color: white;
+}
+
+.link-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  transition: transform 0.3s ease;
+}
+
+.link:hover .link-icon {
+  transform: scale(1.1) rotate(12deg);
+}
+
+.separator {
+  color: #60a5fa;
+  font-size: 1.25rem;
+}
+
+/* Footer Info */
+.footer-info {
+  position: relative;
+  text-align: center;
+}
+
+.footer-info p {
+  color: #93c5fd;
+  font-size: 0.875rem;
+  margin: 0;
+}
