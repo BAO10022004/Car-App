@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import OrdinalEncoder
 import warnings
+import shap
 
 # Suppress sklearn version warnings khi load model
 warnings.filterwarnings('ignore', category=UserWarning, module='sklearn')
@@ -93,6 +94,74 @@ def preprocess_input(buying, maint, doors, persons, lug_boot, safety):
     encoded = encoder.transform(input_df)
     
     return encoded
+
+
+def get_shap_explanation(encoded_scaled_array, feature_names):
+    """Trả về giải thích SHAP cho một mẫu đã được scale (numpy array shape (1, n_features)).
+    encoded_scaled_array: numpy array (1, n_features) đã được scaler.transform
+    feature_names: list tên feature tương ứng
+    """
+    try:
+        # Tạo background nhỏ từ một vài mẫu đại diện
+        bg_df = pd.DataFrame([
+            ['low', 'low', '2', '2', 'small', 'low'],
+            ['med', 'med', '4', '4', 'med', 'med'],
+            ['vhigh', 'vhigh', '5more', 'more', 'big', 'high']
+        ], columns=['buying', 'maint', 'doors', 'persons', 'lug_boot', 'safety'])
+        bg_encoded = encoder.transform(bg_df)
+        bg_scaled = scaler.transform(bg_encoded)
+
+        # Định nghĩa hàm dự đoán cho SHAP: trả về score hoặc xác suất
+        def model_fn(x):
+            # x is in scaled space already
+            try:
+                if hasattr(model, 'predict_proba'):
+                    return np.array(model.predict_proba(x))
+                else:
+                    # decision_function có thể trả về (n_samples, n_classes)
+                    return np.atleast_2d(model.decision_function(x))
+            except Exception:
+                return np.atleast_2d(model.predict(x))
+
+        # Dùng SHAP Explainer với background
+        try:
+            explainer = shap.Explainer(model_fn, bg_scaled, feature_names=feature_names)
+            exp = explainer(encoded_scaled_array)
+            # exp.values shape: (n_outputs?, n_features) or (n_features,)
+            vals = exp.values
+        except Exception:
+            # Fallback to KernelExplainer
+            kexpl = shap.KernelExplainer(model_fn, bg_scaled)
+            shap_vals = kexpl.shap_values(encoded_scaled_array)
+            vals = np.array(shap_vals)
+
+        # Normalize output to single list of contributions for the predicted class if multiclass
+        if isinstance(vals, list) or (hasattr(vals, 'ndim') and vals.ndim == 3):
+            # shap_values for multiclass often is list of arrays per class
+            # choose the class with highest model_fn output for the sample
+            try:
+                preds = model_fn(encoded_scaled_array)
+                class_idx = int(np.argmax(preds, axis=1)[0])
+                if isinstance(vals, list):
+                    chosen = np.array(vals[class_idx])[0]
+                else:
+                    chosen = vals[0][class_idx]
+            except Exception:
+                # fallback: sum across axis 0
+                chosen = np.sum(np.array(vals), axis=0).flatten()
+        else:
+            chosen = np.array(vals).flatten()
+
+        # Build explanation list
+        expl = []
+        for name, v in zip(feature_names, chosen):
+            expl.append({'feature': name, 'shap_value': float(v), 'abs': float(abs(v))})
+
+        # Sort by absolute importance
+        expl_sorted = sorted(expl, key=lambda x: x['abs'], reverse=True)
+        return expl_sorted
+    except Exception as e:
+        return {'error': str(e)}
 
 def predict_decision(sample_dict):
     encoded = preprocess_input(
@@ -217,7 +286,7 @@ def predict():
             'vgood': 'Rất tốt'
         }
         
-        return jsonify({
+        response = {
             'success': True,
             'decision': decision,
             'decision_vn': decision_vn.get(decision, decision),
@@ -229,7 +298,18 @@ def predict():
                 'lug_boot': lug_boot,
                 'safety': safety
             }
-        })
+        }
+
+        # Nếu client yêu cầu giải thích, thêm SHAP explanation
+        if data.get('explain'):
+            feature_names = ['buying', 'maint', 'doors', 'persons', 'lug_boot', 'safety']
+            try:
+                expl = get_shap_explanation(scaled_data, feature_names)
+                response['explanation'] = expl
+            except Exception as e:
+                response['explanation_error'] = str(e)
+
+        return jsonify(response)
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -279,7 +359,7 @@ def optimize():
                 'steps': result['steps']
             }
         })
-
+        
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

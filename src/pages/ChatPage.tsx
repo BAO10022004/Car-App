@@ -28,12 +28,12 @@ interface Message {
 
 type DecisionTarget = 'unacc' | 'acc' | 'good' | 'vgood';
 
-const VIETNAMESE_PROMPTS = [
-  'Xe giá thấp, bảo trì thấp, 4 cửa, 4 người, khoang hành lý lớn, an toàn cao',
-  'Tôi muốn đánh giá xe có giá cao, bảo trì trung bình, 5 cửa, nhiều người, khoang hành lý trung bình, an toàn cao',
-  'Xe giá trung bình, bảo trì thấp, 2 cửa, 2 người, khoang hành lý nhỏ, an toàn trung bình',
-  'Đánh giá xe: giá rất cao, bảo trì cao, 4 cửa, 4 người, khoang hành lý lớn, an toàn cao'
-];
+const VIETNAMESE_PROMPTS: Record<DecisionTarget, string> = {
+  unacc: 'Xe giá rất cao, bảo trì cao, 4 cửa, 4 người, khoang hành lý nhỏ, an toàn thấp',
+  acc: 'Xe giá cao, bảo trì trung bình, 4 cửa, 4 người, khoang hành lý trung bình, an toàn trung bình',
+  good: 'Xe giá trung bình, bảo trì thấp, 4 cửa, 4 người, khoang hành lý lớn, an toàn cao',
+  vgood: 'Xe giá thấp, bảo trì thấp, 4 cửa, nhiều người, khoang hành lý lớn, an toàn cao'
+};
 
 export default function ChatInterface() {
   const [message, setMessage] = useState('');
@@ -123,7 +123,7 @@ export default function ChatInterface() {
 
       // Kiểm tra xem có đủ thông tin không
       if (hasCompleteInfo(updatedInfo)) {
-        // Gọi API để dự đoán
+        // Gọi API để dự đoán (yêu cầu giải thích SHAP)
         try {
           const response = await predictCar({
             buying: updatedInfo.buying!,
@@ -131,7 +131,8 @@ export default function ChatInterface() {
             doors: updatedInfo.doors!,
             persons: updatedInfo.persons!,
             lug_boot: updatedInfo.lug_boot!,
-            safety: updatedInfo.safety!
+            safety: updatedInfo.safety!,
+            explain: true
           });
 
           if (response.success) {
@@ -154,6 +155,43 @@ export default function ChatInterface() {
               `• Mức độ an toàn: ${getVietnameseValue(response.input.safety, 'safety')}`;
 
             let guidance = '';
+            let explanationText = '';
+            // Chỉ hiển thị giải thích SHAP khi kết quả là 'unacc' (Không chấp nhận)
+            if (response.decision === 'unacc') {
+              if ((response as any).explanation && Array.isArray((response as any).explanation)) {
+                const expl: Array<{ feature: string; shap_value: number; abs: number }> = (response as any).explanation;
+                const featureLabel: Record<string, string> = {
+                  buying: 'Giá mua',
+                  maint: 'Chi phí bảo trì',
+                  doors: 'Số cửa',
+                  persons: 'Số người',
+                  lug_boot: 'Khoang hành lý',
+                  safety: 'Mức độ an toàn'
+                };
+
+                // Ưu tiên hiển thị các feature có tác động âm (kéo kết quả xuống)
+                const negatives = expl.filter(e => e.shap_value < 0).sort((a, b) => b.abs - a.abs);
+                const toShow = negatives.length > 0 ? negatives.slice(0, 3) : expl.slice(0, 3);
+
+                const explSentences = toShow.map(e => {
+                  const name = featureLabel[e.feature] || e.feature;
+                  const val = e.shap_value;
+                  const sign = val >= 0 ? '+' : '';
+                  // Nếu giá trị âm -> nhấn mạnh 'kéo kết quả xuống'
+                  if (val < 0) {
+                    return `• ${name}: ${sign}${val.toFixed(3)} — đang khiến kết quả bị kéo xuống.`;
+                  }
+                  return `• ${name}: ${sign}${val.toFixed(3)} — có xu hướng cải thiện kết quả.`;
+                });
+
+                if (explSentences.length) {
+                  explanationText = '\n\n🔎 Lý do (theo SHAP):\n' + explSentences.join('\n');
+                  explanationText += '\n\nGợi ý: Hãy cân nhắc điều chỉnh các thuộc tính có giá trị âm để cải thiện kết quả đánh giá.';
+                }
+              } else if ((response as any).explanation_error) {
+                explanationText = `\n\n🔎 Lý do: Không thể tạo giải thích (${(response as any).explanation_error}).`;
+              }
+            }
             if (role === 'manufacturer' && response.decision !== targetDecision) {
               guidance = `\n\n📐 Gợi ý thiết kế: ${buildManufacturerGuidance(response.decision, updatedInfo, targetDecision)}`;
 
@@ -179,7 +217,7 @@ export default function ChatInterface() {
               }
             }
 
-            const resultText = baseText + guidance + `\n\nCảm ơn bạn đã sử dụng dịch vụ! Bạn muốn đánh giá chiếc xe khác không?`;
+            const resultText = baseText + guidance + explanationText + `\n\nCảm ơn bạn đã sử dụng dịch vụ! Bạn muốn đánh giá chiếc xe khác không?`;
             
             addMessage(resultText, 'bot');
             setCarInfo({}); // Reset thông tin
@@ -323,11 +361,12 @@ export default function ChatInterface() {
             <div className="prompts-section">
               <div className="prompts-title">Gợi ý câu hỏi:</div>
               <div className="prompts-grid">
-                {VIETNAMESE_PROMPTS.map((prompt) => (
+                {Object.entries(VIETNAMESE_PROMPTS).map(([label, prompt]) => (
                   <button
-                    key={prompt}
+                    key={label}
                     className="prompt-button"
                     onClick={() => handlePromptClick(prompt)}
+                    title={label}
                   >
                     {prompt}
                   </button>

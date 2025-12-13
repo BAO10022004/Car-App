@@ -5,6 +5,7 @@ interface CarPredictionRequest {
   persons: string;
   lug_boot: string;
   safety: string;
+  explain?: boolean;
 }
 
 interface CarPredictionResponse {
@@ -12,6 +13,7 @@ interface CarPredictionResponse {
   decision: string;
   decision_vn: string;
   input: CarPredictionRequest;
+  explanation?: Array<{ feature: string; shap_value: number; abs: number }> | { error: string };
   error?: string;
 }
 
